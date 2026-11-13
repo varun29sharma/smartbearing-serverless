@@ -74,7 +74,9 @@ function persistRigReading(c: HandlerCtx, frame: HardwareFrame, source: string):
     nodeId: 'RIG01',
     spindleId: 'RIG01',
     rpm: frame.rpm,
-    temperature: frame.temperature,
+    // Original backend parity: stored rig readings fall back to 30°C
+    // when the frame carries no temperature.
+    temperature: frame.temperature ?? 30,
     vibrationRMS: +round((1 - frame.health_index) * 2).toFixed(3),
     anomalyScore: +round(1 - frame.health_index, 3).toFixed(3),
     healthScore,

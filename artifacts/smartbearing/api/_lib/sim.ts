@@ -302,7 +302,9 @@ export function rulSeries(
 
 export interface HardwareFrame {
   rpm: number;
-  temperature: number;
+  // Nullable like the original backend's HardwareReading: a manual or
+  // bare Arduino frame may arrive without a temperature.
+  temperature: number | null;
   motorSpeed: number;
   rpm_mean: number;
   rpm_std: number;
