@@ -11,8 +11,15 @@
 //
 // Enabled with VITE_SERVERLESS_MODE=true (see .env.production). Local dev
 // against the Express backend keeps the old socket behaviour.
-
-export const SERVERLESS_MODE = import.meta.env.VITE_SERVERLESS_MODE === 'true';
+//
+// Belt and braces: .env.production is gitignored by the app's `.env*` rule,
+// so a missing file silently ships a socket-mode build to Vercel (the live
+// feeds then show "Reconnecting…" forever — this happened on 2026-11-13).
+// The hostname check makes any *.vercel.app deployment serverless even if
+// the env file is ever lost again. Localhost dev is unaffected.
+export const SERVERLESS_MODE =
+  import.meta.env.VITE_SERVERLESS_MODE === 'true' ||
+  (typeof window !== 'undefined' && /\.vercel\.app$/.test(window.location.hostname));
 
 const FAULTS_KEY = 'sb-faults';
 const ALERTS_KEY = 'sb-alerts';

@@ -109,24 +109,34 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const unitParam = selectedUnit ? `?factoryUnit=${selectedUnit}` : '';
-        const [machinesRes, summaryRes, alertsRes, roiRes] = await Promise.all([
+        // allSettled, not all: one slow/failing endpoint (e.g. a cold
+        // serverless instance) must not zero the whole page — each panel
+        // shows up as soon as its own data arrives.
+        const [machinesRes, summaryRes, alertsRes, roiRes] = await Promise.allSettled([
           machinesApi.getAll(selectedUnit ? { factoryUnit: selectedUnit } : undefined),
           analyticsApi.getSummary(),
           alertsApi.getAll({ status: 'active' }),
           analyticsApi.getROI()
         ]);
-        
+
         if (!isMounted) return;
-        
-        setMachines(machinesRes.data.data);
-        setAlerts(alertsRes.data.data);
-        setSummary({
-          ...summaryRes.data.data,
-          estimatedSavings: roiRes.data.data.estimatedSavings,
-          downtimePrevented: roiRes.data.data.downtimePrevented
-        });
-        
-        const top3 = machinesRes.data.data.slice(0, 3);
+
+        const machinesData = machinesRes.status === 'fulfilled' ? machinesRes.value.data.data : null;
+        const summaryData = summaryRes.status === 'fulfilled' ? summaryRes.value.data.data : null;
+        const alertsData = alertsRes.status === 'fulfilled' ? alertsRes.value.data.data : null;
+        const roiData = roiRes.status === 'fulfilled' ? roiRes.value.data.data : null;
+
+        if (machinesData) setMachines(machinesData);
+        if (alertsData) setAlerts(alertsData);
+        if (summaryData || roiData) {
+          setSummary((prev: any) => ({
+            ...prev,
+            ...(summaryData ?? {}),
+            ...(roiData ? { estimatedSavings: roiData.estimatedSavings, downtimePrevented: roiData.downtimePrevented } : {}),
+          }));
+        }
+
+        const top3 = (machinesData ?? []).slice(0, 3);
         if (top3.length >= 3) {
            const [h1, h2, h3] = await Promise.all([
              machinesApi.getHistory(top3[0].id, 24),
