@@ -33,7 +33,11 @@ import {
 import { fmtTimestamp, round, seededRand, startOfDay, uid } from './util.js';
 import type { AlertDoc, MachineDoc } from './data.js';
 // @ts-ignore — JSON import; esbuild/Vercel and tsx both resolve it.
-import mlAnalysis from './ml-analysis.json';
+// The `with { type: 'json' }` attribute is REQUIRED: the app is ESM
+// ("type": "module"), so Node's ESM loader refuses a bare JSON import
+// (ERR_IMPORT_ATTRIBUTE_MISSING) and the whole function fails to load —
+// every request then returns FUNCTION_INVOCATION_FAILED. (13 Nov 2026)
+import mlAnalysis from './ml-analysis.json' with { type: 'json' };
 
 const ENG_ADMIN: Role[] = ['maintenance_engineer', 'admin'];
 const ENG_ADMIN_MGR: Role[] = ['maintenance_engineer', 'admin', 'factory_manager'];
